@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusPulse — All-in-One College Life Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Leaflet Map CSS for Interactive Satellite Campus Navigator -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h2>CampusPulse</h2>
+          <span class="badge-pill">Vibe Edition</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          <span>Overview</span>
+        </button>
+
+        <button class="nav-item" data-tab="map">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+          <span>Campus Navigator</span>
+          <span class="nav-count badge-live">3D/SAT</span>
+        </button>
+
+        <button class="nav-item" data-tab="attendance">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+          <span>Attendance Watchkeeper</span>
+          <span class="nav-count" id="nav-attendance-alert">0</span>
+        </button>
+
+        <button class="nav-item" data-tab="cgpa">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span>CGPA & Grades</span>
+        </button>
+
+        <button class="nav-item" data-tab="tasks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            <path d="m9 14 2 2 4-4"/>
+          </svg>
+          <span>Deadlines & Exams</span>
+          <span class="nav-count pending-badge" id="nav-task-count">0</span>
+        </button>
+
+        <button class="nav-item" data-tab="notes">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span>Quick Notes</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="theme-switcher">
+          <button id="themeToggleBtn" aria-label="Toggle Theme">
+            <span class="theme-icon light-icon">☀️ Light</span>
+            <span class="theme-icon dark-icon">🌙 Dark</span>
+          </button>
+        </div>
+        <div class="storage-actions">
+          <button class="btn-text-sm" id="exportDataBtn" title="Export backup JSON">💾 Export</button>
+          <label class="btn-text-sm file-label" title="Import JSON backup">
+            📂 Import
+            <input type="file" id="importDataInput" accept=".json" style="display:none">
+          </label>
+          <button class="btn-text-sm text-danger" id="resetDemoBtn" title="Reset sample data">🔄 Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="greeting-section">
+          <h1 id="pageTitle">College Overview</h1>
+          <p id="currentDateText">Loading today's date...</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="quick-status-chip" id="overallAttendanceChip">
+            <span class="chip-dot"></span>
+            <span class="chip-label">Attendance: </span>
+            <strong class="chip-val" id="topAttendanceVal">--%</strong>
+          </div>
+          <div class="quick-status-chip" id="overallCgpaChip">
+            <span class="chip-label">Est. CGPA: </span>
+            <strong class="chip-val" id="topCgpaVal">--</strong>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB 1: OVERVIEW -->
+      <section class="tab-pane active" id="pane-overview">
+        <!-- Quick Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card glass-card">
+            <div class="stat-header">
+              <span class="stat-title">Overall Attendance</span>
+              <span class="stat-badge" id="overviewAttendanceStatus">Healthy</span>
+            </div>
+            <div class="stat-value" id="overviewAvgAttendance">0%</div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar-fill" id="overviewAttendanceBar" style="width: 0%"></div>
+            </div>
+            <p class="stat-footer-text" id="overviewAttendanceDesc">Loading subjects...</p>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-header">
+              <span class="stat-title">Academic CGPA</span>
+              <span class="stat-badge badge-blue">Target 8.5+</span>
+            </div>
+            <div class="stat-value" id="overviewCgpaValue">0.00</div>
+            <p class="stat-footer-text" id="overviewCgpaDesc">Based on current course grades</p>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-header">
+              <span class="stat-title">Pending Deadlines</span>
+              <span class="stat-badge badge-warning" id="overviewDueBadge">0 Soon</span>
+            </div>
+            <div class="stat-value" id="overviewPendingTasksCount">0</div>
+            <p class="stat-footer-text" id="overviewNextTaskText">No urgent deadlines</p>
+          </div>
+
+          <div class="stat-card glass-card">
+            <div class="stat-header">
+              <span class="stat-title">Bunk Safe Status</span>
+              <span class="stat-badge badge-purple">AI Formula</span>
+            </div>
+            <div class="stat-value" id="overviewBunkStatus">Checked</div>
+            <p class="stat-footer-text" id="overviewBunkDetail">Calculated on 75% rule</p>
+          </div>
+        </div>
+
+        <!-- Interactive Campus Map Promo Banner -->
+        <div class="card glass-card map-promo-banner" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%); border: 1px solid rgba(99, 102, 241, 0.25);">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span class="badge-live" style="font-size:0.7rem; padding: 2px 8px; border-radius: var(--radius-full); font-weight:700;">NEW FEATURE</span>
+              <h3 style="font-size:1.15rem; margin:0;">Interactive Campus Navigator & Satellite Tours</h3>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin:0;">Explore high-resolution satellite imagery, building directories, photo galleries, and 4K aerial drone tours.</p>
+          </div>
+          <button class="btn btn-primary" onclick="window.switchTab('map')" style="white-space:nowrap;">
+            🛰️ Launch Campus Navigator
+          </button>
+        </div>
+
+        <!-- 2 Column Section -->
+        <div class="dashboard-columns">
+          <div class="card glass-card">
+            <div class="card-header">
+              <div>
+                <h3>Subject Attendance Quick-View</h3>
+                <p class="subtitle">1-Click log attendance for today</p>
+              </div>
+              <button class="btn-sm btn-primary" onclick="window.switchTab('attendance')">Manage All</button>
+            </div>
+            <div class="subject-quicklist" id="overviewSubjectList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="card glass-card">
+            <div class="card-header">
+              <div>
+                <h3>Upcoming Deadlines & Exams</h3>
+                <p class="subtitle">Don't get caught unprepared</p>
+              </div>
+              <button class="btn-sm btn-primary" onclick="window.switchTab('tasks')">Add New</button>
+            </div>
+            <div class="task-quicklist" id="overviewTaskList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ATTENDANCE WATCHKEEPER -->
+      <section class="tab-pane" id="pane-attendance">
+        <div class="section-banner">
+          <div class="banner-info">
+            <h2>Attendance Watchkeeper & Bunk Predictor</h2>
+            <p>Track every subject, predict safe skips, and calculate exact classes needed to prevent debarment.</p>
+          </div>
+          <button class="btn btn-primary" id="openAddSubjectModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Subject
+          </button>
+        </div>
+
+        <!-- Attendance Threshold Configuration -->
+        <div class="card criteria-card glass-card">
+          <div class="criteria-row">
+            <div class="criteria-text">
+              <strong>College Attendance Threshold Criteria:</strong>
+              <span>Minimum attendance percentage required to be eligible for end-term examinations.</span>
+            </div>
+            <div class="criteria-input-group">
+              <input type="number" id="criteriaThresholdInput" min="50" max="95" value="75">
+              <span>%</span>
+              <button class="btn-sm btn-outline" id="saveThresholdBtn">Apply</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subject Cards Grid -->
+        <div class="subject-cards-grid" id="attendanceCardsContainer">
+          <!-- Subject cards injected by JavaScript -->
+        </div>
+      </section>
+
+      <!-- TAB 3: CGPA & GRADE CALCULATOR -->
+      <section class="tab-pane" id="pane-cgpa">
+        <div class="section-banner">
+          <div class="banner-info">
+            <h2>CGPA & Semester SGPA Calculator</h2>
+            <p>Compute your semester SGPA, plan upcoming grades, and maintain your target academic standing.</p>
+          </div>
+          <button class="btn btn-primary" id="openAddCourseModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Course
+          </button>
+        </div>
+
+        <div class="cgpa-layout">
+          <!-- Course Grades Table -->
+          <div class="card glass-card table-card">
+            <div class="card-header">
+              <div>
+                <h3>Current Semester Courses</h3>
+                <p class="subtitle">Grades follow standard 10-point college grading scale</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table" id="coursesTable">
+                <thead>
+                  <tr>
+                    <th>Course Code / Name</th>
+                    <th>Credits</th>
+                    <th>Grade</th>
+                    <th>Grade Points</th>
+                    <th>Credit Points</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="courseTableBody">
+                  <!-- Courses dynamically added -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Grade Summary & Target Planner -->
+          <div class="cgpa-sidebar-panel">
+            <div class="card glass-card score-card">
+              <h3>Semester SGPA</h3>
+              <div class="big-score" id="computedSgpa">0.00</div>
+              <div class="score-breakdown">
+                <div>
+                  <span>Total Credits</span>
+                  <strong id="totalCreditsVal">0</strong>
+                </div>
+                <div>
+                  <span>Earned Points</span>
+                  <strong id="totalCreditPointsVal">0</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card glass-card planner-card">
+              <h3>Target CGPA Forecaster</h3>
+              <p class="small-text">Calculate required future SGPA to achieve your dream CGPA.</p>
+              <div class="form-group-sm">
+                <label>Current Cumulative CGPA</label>
+                <input type="number" id="targetCurrentCgpa" step="0.01" min="0" max="10" placeholder="e.g. 7.80">
+              </div>
+              <div class="form-group-sm">
+                <label>Credits Completed So Far</label>
+                <input type="number" id="targetCompletedCredits" min="0" max="250" placeholder="e.g. 60">
+              </div>
+              <div class="form-group-sm">
+                <label>Desired Target CGPA</label>
+                <input type="number" id="targetDesiredCgpa" step="0.01" min="0" max="10" placeholder="e.g. 8.50">
+              </div>
+              <div class="form-group-sm">
+                <label>Remaining Credits Ahead</label>
+                <input type="number" id="targetUpcomingCredits" min="1" max="150" placeholder="e.g. 40">
+              </div>
+              <button class="btn btn-primary btn-block" id="calcTargetSgpaBtn">Calculate Needed SGPA</button>
+              <div class="forecast-result" id="forecastResultBox" style="display:none">
+                <!-- Forecast result text -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: TASKS & EXAM DEADLINES -->
+      <section class="tab-pane" id="pane-tasks">
+        <div class="section-banner">
+          <div class="banner-info">
+            <h2>College Deadlines & Exam Watcher</h2>
+            <p>Track lab submissions, assignments, mid-terms, and end-semesters with live countdowns.</p>
+          </div>
+          <button class="btn btn-primary" id="openAddTaskModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Task / Exam
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-btn active" data-filter="all">All Items (<span id="count-all">0</span>)</button>
+            <button class="filter-btn" data-filter="pending">Pending (<span id="count-pending">0</span>)</button>
+            <button class="filter-btn" data-filter="urgent">Urgent (&le; 3 Days)</button>
+            <button class="filter-btn" data-filter="completed">Completed (<span id="count-completed">0</span>)</button>
+          </div>
+        </div>
+
+        <div class="tasks-container" id="tasksListContainer">
+          <!-- Dynamic Task Cards -->
+        </div>
+      </section>
+
+      <!-- TAB 5: QUICK CAMPUS NOTES -->
+      <section class="tab-pane" id="pane-notes">
+        <div class="section-banner">
+          <div class="banner-info">
+            <h2>Campus Scratchpad & Notes</h2>
+            <p>Save faculty office hours, lab room codes, Wi-Fi keys, and quick study reminders.</p>
+          </div>
+          <button class="btn btn-primary" id="openAddNoteModalBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Note
+          </button>
+        </div>
+
+        <div class="notes-grid" id="notesGridContainer">
+          <!-- Notes cards dynamically injected -->
+        </div>
+      </section>
+
+      <!-- TAB 6: CAMPUS NAVIGATOR & REALISTIC SATELLITE MAP -->
+      <section class="tab-pane" id="pane-map">
+        <div class="section-banner">
+          <div class="banner-info">
+            <h2>Interactive Campus Navigator & Virtual Tours</h2>
+            <p>Explore high-definition satellite imagery, building directories, room locations, photo galleries, and aerial video tours.</p>
+          </div>
+          <div class="map-banner-actions">
+            <button class="btn btn-outline" id="toggleMapLayerBtn">
+              <span id="mapLayerIcon">🛰️</span>
+              <span id="mapLayerText">Switch to Street Map</span>
+            </button>
+            <button class="btn btn-primary" id="resetMapCenterBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+              Recenter Campus
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls Bar -->
+        <div class="map-controls-card glass-card">
+          <div class="map-search-row">
+            <div class="map-search-input-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input type="text" id="campusSearchInput" placeholder="Search buildings, faculties, labs (e.g. Robotics, Library, Cafeteria)...">
+            </div>
+            <div class="room-jump-select">
+              <select id="quickRoomJumpSelect">
+                <option value="">⚡ Quick Jump to Room / Facility...</option>
+                <option value="bldg-cs">Lab 402 / CS Robotics Wing</option>
+                <option value="bldg-lib">Central Library Silent Floor</option>
+                <option value="bldg-admin">Dean & Registrar Office</option>
+                <option value="bldg-sports">Olympic Gymnasium & Pool</option>
+                <option value="bldg-food">Food Court & Amphitheater</option>
+                <option value="bldg-science">Chemistry & Biotech Labs</option>
+                <option value="bldg-hostel">Student Residential Quads</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="map-category-pills" id="mapCategoryPills">
+            <button class="map-pill active" data-category="all">All Locations (7)</button>
+            <button class="map-pill" data-category="academic">🏛️ Academic & Labs</button>
+            <button class="map-pill" data-category="library">📚 Central Library</button>
+            <button class="map-pill" data-category="food">☕ Cafeteria & Lounge</button>
+            <button class="map-pill" data-category="sports">⚽ Sports Complex</button>
+            <button class="map-pill" data-category="admin">🏢 Administration</button>
+            <button class="map-pill" data-category="hostel">🛏️ Hostels</button>
+          </div>
+        </div>
+
+        <!-- Map & Details Layout -->
+        <div class="map-layout-grid">
+          <!-- Main Map Viewport -->
+          <div class="map-viewport-wrapper glass-card">
+            <div id="campusMap"></div>
+            <!-- Floating Map Badge Overlay -->
+            <div class="map-overlay-badge">
+              <span class="pulse-indicator"></span>
+              <span>Live Satellite HD • High Resolution Orthophoto</span>
+            </div>
+          </div>
+
+          <!-- Selected Building Card / Directory Panel -->
+          <div class="map-sidebar-card glass-card" id="mapSidebarPanel">
+            <div class="selected-bldg-hero">
+              <img id="sideBldgPhoto" src="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80" alt="Building Preview">
+              <div class="side-bldg-badge" id="sideBldgCategory">Academic</div>
+            </div>
+            <div class="selected-bldg-content">
+              <h3 id="sideBldgTitle">Turing Computing & AI Research Center</h3>
+              <p class="side-bldg-subtitle" id="sideBldgCode">Block CS • Academic North Quad</p>
+              <p class="side-bldg-desc" id="sideBldgDesc">Main hub for Computer Science, Artificial Intelligence, Robotics, and high-performance computing laboratories.</p>
+
+              <div class="bldg-highlights-list" id="sideBldgHighlights">
+                <!-- Injected via JS -->
+              </div>
+
+              <div class="bldg-meta-info">
+                <div>
+                  <span class="meta-label">Hours</span>
+                  <strong id="sideBldgHours">08:00 AM - 09:30 PM</strong>
+                </div>
+                <div>
+                  <span class="meta-label">Walking Time</span>
+                  <strong id="sideBldgWalk">~3 min from Main Gate</strong>
+                </div>
+              </div>
+
+              <div class="bldg-action-buttons">
+                <button class="btn btn-primary btn-block" id="openTourVideoBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                  Watch 4K Video Tour & Photos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT SUBJECT -->
+  <div class="modal-backdrop" id="subjectModal">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <h3 id="subjectModalTitle">Add New Subject</h3>
+        <button class="close-modal" id="closeSubjectModal">&times;</button>
+      </div>
+      <form id="subjectForm">
+        <input type="hidden" id="editSubjectId">
+        <div class="form-group">
+          <label for="subName">Subject / Course Name *</label>
+          <input type="text" id="subName" required placeholder="e.g. Data Structures & Algorithms">
+        </div>
+        <div class="form-group">
+          <label for="subCode">Course Code / Room</label>
+          <input type="text" id="subCode" placeholder="e.g. CS201 / Lab 402">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="subAttended">Classes Attended *</label>
+            <input type="number" id="subAttended" min="0" value="0" required>
+          </div>
+          <div class="form-group">
+            <label for="subTotal">Total Classes Conducted *</label>
+            <input type="number" id="subTotal" min="0" value="0" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="subTarget">Custom Target Threshold (%)</label>
+          <input type="number" id="subTarget" min="50" max="100" value="75">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelSubjectModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Subject</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT COURSE FOR CGPA -->
+  <div class="modal-backdrop" id="courseModal">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <h3>Add Semester Course</h3>
+        <button class="close-modal" id="closeCourseModal">&times;</button>
+      </div>
+      <form id="courseForm">
+        <div class="form-group">
+          <label for="courseName">Course Title *</label>
+          <input type="text" id="courseName" required placeholder="e.g. Operating Systems">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="courseCredits">Credits *</label>
+            <input type="number" id="courseCredits" min="1" max="10" value="4" required>
+          </div>
+          <div class="form-group">
+            <label for="courseGrade">Expected / Received Grade *</label>
+            <select id="courseGrade" required>
+              <option value="10">O (Outstanding - 10)</option>
+              <option value="9">A+ (Excellent - 9)</option>
+              <option value="8" selected>A (Very Good - 8)</option>
+              <option value="7">B+ (Good - 7)</option>
+              <option value="6">B (Above Average - 6)</option>
+              <option value="5">C (Pass - 5)</option>
+              <option value="0">F (Fail - 0)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelCourseModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Course</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT TASK -->
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <h3 id="taskModalTitle">Add Deadline / Exam</h3>
+        <button class="close-modal" id="closeTaskModal">&times;</button>
+      </div>
+      <form id="taskForm">
+        <input type="hidden" id="editTaskId">
+        <div class="form-group">
+          <label for="taskTitle">Title *</label>
+          <input type="text" id="taskTitle" required placeholder="e.g. DBMS Assignment 2 or Mid-Term Exam">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskCourse">Subject / Category</label>
+            <input type="text" id="taskCourse" placeholder="e.g. Database Systems">
+          </div>
+          <div class="form-group">
+            <label for="taskType">Type</label>
+            <select id="taskType">
+              <option value="assignment">Assignment / Project</option>
+              <option value="exam">Mid-term / Exam</option>
+              <option value="lab">Lab Submission</option>
+              <option value="presentation">Presentation / Viva</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskDueDate">Due Date *</label>
+            <input type="date" id="taskDueDate" required>
+          </div>
+          <div class="form-group">
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority">
+              <option value="high">High Priority 🔴</option>
+              <option value="medium" selected>Medium Priority 🟡</option>
+              <option value="low">Low Priority 🟢</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="taskNotes">Notes / Submission Link</label>
+          <textarea id="taskNotes" rows="2" placeholder="e.g. Submit on Google Classroom or portal before 11:59 PM"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelTaskModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Deadline</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT NOTE -->
+  <div class="modal-backdrop" id="noteModal">
+    <div class="modal-box glass-card">
+      <div class="modal-header">
+        <h3 id="noteModalTitle">Add Quick Campus Note</h3>
+        <button class="close-modal" id="closeNoteModal">&times;</button>
+      </div>
+      <form id="noteForm">
+        <input type="hidden" id="editNoteId">
+        <div class="form-group">
+          <label for="noteTitle">Note Title *</label>
+          <input type="text" id="noteTitle" required placeholder="e.g. HOD Office Hours or Wi-Fi Details">
+        </div>
+        <div class="form-group">
+          <label for="noteTag">Tag / Category</label>
+          <input type="text" id="noteTag" placeholder="e.g. Faculty, Timetable, Labs">
+        </div>
+        <div class="form-group">
+          <label for="noteContent">Details *</label>
+          <textarea id="noteContent" rows="4" required placeholder="Type notes here..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelNoteModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REALISTIC SATELLITE PHOTOS & VIDEO TOUR -->
+  <div class="modal-backdrop" id="campusMediaModal">
+    <div class="modal-box modal-box-large glass-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="mediaModalTitle">Campus Tour & Media Hub</h3>
+          <p class="subtitle" id="mediaModalSubtitle">High-definition satellite photos and 4K aerial video walkthrough</p>
+        </div>
+        <button class="close-modal" id="closeMediaModal">&times;</button>
+      </div>
+
+      <div class="media-tabs-header">
+        <button class="media-tab-btn active" id="tabBtnVideo">
+          🎥 Drone & Virtual Video Tour
+        </button>
+        <button class="media-tab-btn" id="tabBtnPhotos">
+          🛰️ High-Resolution Satellite & Aerial Photos
+        </button>
+      </div>
+
+      <!-- VIDEO PANE -->
+      <div class="media-view-pane active" id="paneVideoTour">
+        <div class="video-container">
+          <video id="campusTourVideo" controls loop playsinline preload="metadata">
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-drone-view-of-a-university-campus-42838-large.mp4" type="video/mp4">
+            Your browser does not support HTML5 video.
+          </video>
+        </div>
+        <div class="media-caption-bar">
+          <span class="badge-pill">4K Aerial Stream</span>
+          <span id="videoCaptionText">Cinematic drone flyover covering campus grounds, architectural design, and academic wings.</span>
+        </div>
+      </div>
+
+      <!-- PHOTOS PANE -->
+      <div class="media-view-pane" id="panePhotoGallery">
+        <div class="photo-featured-box">
+          <img id="featuredGalleryImg" src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80" alt="Campus Feature">
+          <div class="photo-overlay-caption" id="photoCaptionText">Aerial Orthophoto of Central Campus</div>
+        </div>
+        <div class="photo-thumbnails-row" id="photoThumbnailsRow">
+          <!-- Thumbnails injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Leaflet Map JS Library (No build step required) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
